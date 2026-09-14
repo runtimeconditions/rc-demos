@@ -1,0 +1,20 @@
+{
+  "name": "@runtimeconditions/plugin-runtime-conditions",
+  "version": "0.1.0",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "backstage": {
+    "role": "frontend-plugin"
+  },
+  "dependencies": {
+    "@backstage/catalog-model": "^1.4.0",
+    "@backstage/core-components": "^0.14.0",
+    "@backstage/core-plugin-api": "^1.9.0",
+    "@backstage/plugin-catalog-react": "^1.9.0",
+    "@backstage/plugin-kubernetes-common": "^0.7.0",
+    "@backstage/plugin-kubernetes-react": "^0.1.0"
+  },
+  "peerDependencies": {
+    "react": "^17.0.0 || ^18.0.0"
+  }
+}
