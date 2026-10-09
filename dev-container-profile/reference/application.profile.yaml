@@ -6,9 +6,9 @@ workload:
   uri: https://github.com/runtimeconditions/rc-demos/tree/main/dev-container-profile/app
   version: demo
 extensions:
-  - https://runtimeconditions.io/extensions/common-integrations/v1alpha1/runtimeconditions.extension.yaml
-  - https://runtimeconditions.io/extensions/env-configuration/v1alpha1/runtimeconditions.extension.yaml
-  - https://runtimeconditions.io/extensions/google-analytics/0.1.0/runtimeconditions.extension.yaml
+  - https://runtimeconditions.io/extensions/common-integrations:v1alpha1
+  - https://runtimeconditions.io/extensions/env-configuration:v1alpha1
+  - https://runtimeconditions.io/extensions/google-analytics:0.1.0
 conditions:
   - name: content-api
     kind: api
