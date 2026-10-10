@@ -1,0 +1,5 @@
+FROM python:3.12-alpine
+RUN pip install --no-cache-dir PyYAML==6.0.2
+COPY kratix/promises/application-release/pipeline/resolver.py /app/resolver.py
+COPY validated-profile-handoff/kratix/resolve.py /app/resolve.py
+ENTRYPOINT ["python", "/app/resolve.py"]

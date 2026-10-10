@@ -15,6 +15,7 @@ This tree contains runnable examples and downstream adapter assets.
 - `apps/request-logger-http-java/` - Java workload with matching explicit declarations for the same Conditions as the Go request logger.
 - `apps/todos-api/` - simple provider API used by the request logger demo.
 - `portable-profile/` - experiment in which one generated request-logger Profile is consumed by both a local development environment and the Kratix deployment path. Start with [`portable-profile/README.md`](portable-profile/README.md).
+- `validated-profile-handoff/` - experiment in verifying trusted upstream validation evidence for exact Profile and extension artifacts before consumer support evaluation. Start with [`validated-profile-handoff/README.md`](validated-profile-handoff/README.md).
 - `artifacts/request-logger-http.profile.yaml` - the generated, committed request-logger Profile shared by both consumers.
 - `dev-container-profile/` - development scaffold and acceptance contract for a build-time Profile composition demo. Implementers should start with [`dev-container-profile/README.md`](dev-container-profile/README.md).
 - `catalog/apis/` - OpenAPI and catalog files used by the adapter demo.

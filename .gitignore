@@ -5,3 +5,5 @@
 **/__pycache__/
 **/*.pyc
 kratix/generated/
+
+validated-profile-handoff/generated/

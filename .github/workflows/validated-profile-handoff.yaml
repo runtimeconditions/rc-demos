@@ -1,0 +1,129 @@
+name: Validated Profile handoff experiment
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/validated-profile-handoff.yaml"
+      - "validated-profile-handoff/**"
+      - "portable-profile/**"
+      - "apps/request-logger-http/**"
+      - "artifacts/**"
+      - "kratix/**"
+  push:
+    branches: [main, experiment/validated-profile-handoff]
+    paths:
+      - ".github/workflows/validated-profile-handoff.yaml"
+      - "validated-profile-handoff/**"
+      - "portable-profile/**"
+      - "apps/request-logger-http/**"
+      - "artifacts/**"
+      - "kratix/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  handoff:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          path: rc-demos
+      # Pin the validator/catalog inspected for this experiment. Existing
+      # portable-profile CI remains unchanged and continues tracking upstream.
+      - uses: actions/checkout@v7
+        with:
+          repository: runtimeconditions/extensions
+          ref: 1f24b8815812f8a883cf7ceb87b6a9810d47e106
+          path: extensions
+      - uses: actions/checkout@v7
+        with:
+          repository: runtimeconditions/go-rc-profiler
+          ref: 5d2e860e48842b89ec83414123a7e59228f61d36
+          path: go-rc-profiler
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go-rc-profiler/go.mod
+          cache-dependency-path: |
+            go-rc-profiler/go.sum
+            rc-demos/portable-profile/go.sum
+            rc-demos/validated-profile-handoff/go.sum
+      - name: Existing consumer and workload tests
+        working-directory: rc-demos
+        run: |
+          (cd portable-profile && go test ./...)
+          (cd apps/request-logger-http && go test ./...)
+      - name: Acceptance cases and validator-free consumer boundary
+        working-directory: rc-demos/validated-profile-handoff
+        run: go test -v ./...
+      - name: Kratix adapter and existing resolver tests
+        working-directory: rc-demos
+        run: |
+          python3 -m venv "$RUNNER_TEMP/handoff-venv"
+          "$RUNNER_TEMP/handoff-venv/bin/pip" install PyYAML==6.0.2
+          export PATH="$RUNNER_TEMP/handoff-venv/bin:$PATH"
+          python3 -m unittest discover -s validated-profile-handoff/kratix -p 'test_*.py' -v
+          (cd kratix/promises/application-release/pipeline && python3 -m unittest -v test_resolver)
+      - name: Generate, validate, verify, and consume
+        working-directory: rc-demos
+        run: validated-profile-handoff/scripts/run.sh
+      - name: Inspectable bundles and outcomes (no signing key)
+        uses: actions/upload-artifact@v4
+        with:
+          name: validated-profile-handoff
+          path: |
+            rc-demos/validated-profile-handoff/generated/run.*/valid/
+            rc-demos/validated-profile-handoff/generated/run.*/unsupported/
+            rc-demos/validated-profile-handoff/generated/run.*/*-result.json
+            rc-demos/validated-profile-handoff/generated/run.*/trusted.pub
+            rc-demos/validated-profile-handoff/generated/run.*/request-logger.env
+          if-no-files-found: error
+
+  kratix:
+    name: Real Kratix workflow on KinD
+    needs: handoff
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          path: rc-demos
+      - uses: actions/checkout@v7
+        with:
+          repository: runtimeconditions/extensions
+          ref: 1f24b8815812f8a883cf7ceb87b6a9810d47e106
+          path: extensions
+      - uses: actions/checkout@v7
+        with:
+          repository: runtimeconditions/go-rc-profiler
+          ref: 5d2e860e48842b89ec83414123a7e59228f61d36
+          path: go-rc-profiler
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go-rc-profiler/go.mod
+          cache-dependency-path: |
+            go-rc-profiler/go.sum
+            rc-demos/validated-profile-handoff/go.sum
+      - name: Install cluster test tools
+        run: |
+          go install sigs.k8s.io/kind@v0.30.0
+          curl -fsSL https://dl.k8s.io/release/v1.34.0/bin/linux/amd64/kubectl -o "$RUNNER_TEMP/kubectl"
+          curl -fsSL https://dl.k8s.io/release/v1.34.0/bin/linux/amd64/kubectl.sha256 -o "$RUNNER_TEMP/kubectl.sha256"
+          echo "$(cat "$RUNNER_TEMP/kubectl.sha256")  $RUNNER_TEMP/kubectl" | sha256sum --check
+          chmod +x "$RUNNER_TEMP/kubectl"
+          echo "$RUNNER_TEMP" >> "$GITHUB_PATH"
+          python3 -m venv "$RUNNER_TEMP/cluster-venv"
+          "$RUNNER_TEMP/cluster-venv/bin/pip" install PyYAML==6.0.2
+          echo "$RUNNER_TEMP/cluster-venv/bin" >> "$GITHUB_PATH"
+      - name: Submit all five cases to real Kratix workflows
+        working-directory: rc-demos
+        run: validated-profile-handoff/scripts/kind-ci.sh
+      - name: Retain workflow evidence even on failure (no signing keys)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: kratix-handoff-workflow-evidence
+          path: rc-demos/validated-profile-handoff/generated/kratix/
+          if-no-files-found: warn
