@@ -1,5 +1,11 @@
 # Validated Profile handoff
 
+> **Draft migration: not ready to merge.** The published-path producer currently
+> fails closed in profiler v0.6.0's catalog API. The original five acceptance cases
+> remain enabled and fail during upstream setup; they have not passed on this
+> branch. See [PUBLISHED-MIGRATION.md](PUBLISHED-MIGRATION.md) for the reproducer
+> and the upstream compatibility issue. Baseline observations below describe PR #5.
+
 **Same portable Profile + trusted upstream validation evidence + independent
 consumer support evaluation.**
 
@@ -34,7 +40,7 @@ profile.yaml + extensions/*.yaml + evidence.json + evidence.sig
         v  cmd/consume: configured key, signature, exact-byte digests
 verified Profile bytes
         |
-        v  unchanged portable-profile/cmd/dev-bind: support evaluation
+        v  portable-profile/cmd/dev-bind: support evaluation
 supported demand -> environment bindings written
 unsupported demand -> explicit unsupported result, no bindings written
 ```
@@ -62,19 +68,28 @@ workload or a claim that the application's Redis client implements memcached.
 | Configured public key | Consumer-side trust policy, provisioned separately from received bundles |
 | `request-logger.env` | Consumer-produced development configuration, not part of RC validation evidence |
 
-The current upstream `extensioncheck.ResolveExtensionClosure` and
-`extensioncheck.ValidateProfileYAML` APIs resolve `metadata.id` through local
-catalog directories. IDs are not fetched as URLs. The resolver checks extension
-definitions and dependencies; Profile validation checks the declared closure,
-resolved vocabulary, and applicable extension schemas.
+The normal producer path retrieves the complete HTTPS definition URLs declared
+by the released bindings. The pinned upstream `rc-extension-resolver` walks each
+root and its dependencies, detects cycles and identity mismatches, and merges
+interface/schema ownership. The producer rejects ambiguous kinds instead of
+using the resolver's permissive fallback. Every URI is fetched once per attempt;
+exact response bytes are captured and written into a private snapshot, without
+YAML reserialization. Retrieval has a 20-second timeout and a 4 MiB definition
+limit; non-200 responses, invalid envelopes, malformed/multiple documents, and
+non-HTTPS requests or redirects fail closed. No alternative version or local
+source is tried on network failure.
 
-The producer copies catalog definition bytes to a private directory before
-calling those APIs. It rejects duplicate IDs. It then validates the final
-Profile against a second private directory containing only the resolved closure.
-Only after both calls succeed does it sign. Thus the evidence covers the bytes
-actually available to final validation, rather than hashing mutable source files
-after validation. The current request-logger closure contains common-integrations
-and env-configuration; the latter depends on the former.
+The existing profiler `ResolveExtensionClosure` and `ValidateProfileYAML` checks
+remain mandatory against private snapshots. Only the exact resolved closure is
+available to final validation and signing. **v0.6.0 currently rejects the published
+IDs at that first strict validation step**, as explained in the compatibility
+report. No evidence or signature is produced when that happens.
+
+`-catalog DIR` explicitly selects offline mode, with duplicate IDs rejected.
+The runner and Go acceptance tests accept `EXTENSIONS_ROOT` for that explicit
+mode. It never serves as online fallback; it does not repair the released
+validator mismatch. Deterministic retrieval tests use local HTTP servers and
+captured published bytes; real acceptance and integration runs use HTTPS.
 
 The verifier reads the Profile once, checks a small usable envelope, verifies the
 signature, compares its byte digest, compares the Profile's extension IDs with
@@ -123,12 +138,19 @@ upstream implementation and extensions.
 
 ## Run it
 
-Use Go 1.25 or newer. Clone `extensions` and `go-rc-profiler` beside `rc-demos`, as
-for the portable-profile demo. The new CI workflow pins the inspected upstream
-revisions so its results can be reproduced:
+Use Go **1.27.3** for the handoff producer and tests. No sibling repositories
+are required. Pinned dependencies are:
 
-- `go-rc-profiler`: `5d2e860e48842b89ec83414123a7e59228f61d36`
-- `extensions`: `1f24b8815812f8a883cf7ceb87b6a9810d47e106`
+- profiler library and official executable: `v0.6.0`;
+- bindings: `runtimeconditions.io/x/rc/common@v0.1.0` and `runtimeconditions.io/x/rc/env@v0.1.0`;
+- resolver: `v0.0.0-20261005083147-3cc942274975` (no published tags; exact upstream commit pin).
+
+The resolver requires Go 1.27; both CI workflows select 1.27.3. Modules are
+checksum-pinned in `go.sum`. First build/generation downloads modules and the
+profiler release; online producer attempts also require access to the declared
+HTTPS definition URLs. TLS and the publisher's immutable versioned URI contract
+are trusted at retrieval time. Evidence binds the exact bytes retrieved in that
+attempt, not a claim of publisher authenticity beyond those assumptions.
 
 From the repository root:
 
@@ -162,7 +184,6 @@ trust=$(mktemp -d)
 go run ./cmd/keygen -out "$trust/keys"
 generated/manual/validate \
   -profile ../artifacts/request-logger-http.profile.yaml \
-  -catalog ../../extensions/catalog \
   -key "$trust/keys/signer.key" -out generated/manual/bundle
 generated/manual/consume \
   -bundle generated/manual/bundle -trusted-key "$trust/keys/trusted.pub" \
@@ -170,11 +191,11 @@ generated/manual/consume \
 rm -rf "$trust"
 ```
 
-The module uses a sibling `go-rc-profiler` checkout, matching the earlier
-composition demo. `EXTENSIONS_ROOT` can override the local catalog path for the
-runner and tests. It does not change the existing generator's package discovery.
+These commands currently terminate with `upstream_validation_failed` until the
+released catalog identity mismatch is corrected. Output directories are created
+atomically only after validation succeeds; private keys are never included.
 
-## Acceptance cases and observed results
+## Acceptance contract and PR #5 baseline results
 
 The automated tests run the real upstream APIs before producing evidence. They
 do not stub validation or declare an arbitrary unsupported Condition valid.
@@ -192,7 +213,7 @@ process starts. The unsupported case runs the actual development consumer. A
 negative producer test also confirms that an invalid engine is rejected upstream
 without returning signed artifacts.
 
-The command-line runner produced `handoff_verified: true` and
+The PR #5 command-line runner produced `handoff_verified: true` and
 `support_evaluated: true` for both the canonical and memcached Profiles, with
 `supported` and `unsupported` respectively. This is the distinction under test:
 
@@ -224,8 +245,7 @@ Fulfillment here is deliberately limited to the existing consumer's binding
 file write. The failure test passes a directory as the output filename: support
 succeeds before the write fails. Without `-env-out`, the command only evaluates
 support. Starting services, checking their health, or deploying Kubernetes
-resources is outside this wrapper. The existing portable-profile workflow is
-unchanged and continues testing the live development demo and Kratix resolver.
+resources is outside this wrapper. The portable-profile workflow now uses published dependencies and continues testing the live development demo and Kratix resolver.
 
 ## What this demonstrates, and questions it exposes
 
@@ -258,6 +278,5 @@ format, standardize validation levels, or prove all consumers need this boundary
 The recorded API calls describe this implementation, not normative RC levels.
 The verifier is now exercised by both the local development wrapper and an
 opt-in Kratix Promise; neither integration changes the RC Profile schema.
-Extension-resolution reporting could eventually remove the need for
-the producer's local snapshot/index code; whether that belongs upstream is an
-open implementation question.
+The published resolver now owns graph traversal; snapshotting exact response
+bytes and refusing to sign after validation failure remain producer concerns.

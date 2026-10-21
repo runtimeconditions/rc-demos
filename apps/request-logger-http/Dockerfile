@@ -1,11 +1,9 @@
-FROM golang:1.25-alpine AS build
+FROM golang:1.25.3-alpine AS build
 
 WORKDIR /src
-COPY extensions ./extensions
-COPY rc-demos/apps/request-logger-http/go.mod ./rc-demos/apps/request-logger-http/go.mod
-COPY rc-demos/apps/request-logger-http/*.go ./rc-demos/apps/request-logger-http/
+COPY go.mod go.sum ./
+COPY *.go ./
 
-WORKDIR /src/rc-demos/apps/request-logger-http
 RUN go mod download
 RUN go build -o /out/request-logger .
 

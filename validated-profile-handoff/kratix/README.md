@@ -20,7 +20,8 @@ flowchart TD
 
 `promise.py` derives an opt-in `validated-application-release` Promise from the
 existing ApplicationRelease Promise. It leaves that original Promise, its
-resolver, and the portable-profile workflow unchanged. The new platform request
+fulfillment behavior unchanged. Both consumers now accept optional Condition
+names from the released bindings; only diagnostic labels change. The new platform request
 kind is `ValidatedApplicationRelease`, **not a new Runtime Conditions resource**.
 Render the inspectable manifest with:
 
@@ -74,8 +75,15 @@ rejection terminates promptly rather than becoming a retry loop.
 
 ## Run and inspect
 
-Prerequisites: Docker, Go 1.25+, Python with PyYAML, kubectl, KinD, and the sibling
-profiler/extensions checkouts at the revisions recorded in the parent README.
+Prerequisites: Docker, Go 1.27.3, Python with PyYAML, kubectl, and KinD.
+Published modules and the checksum-pinned profiler release replace sibling
+checkouts. Preparation resolves extension URLs over HTTPS, with no local
+fallback. See the parent README for versions and network requirements.
+
+**Draft migration limitation:** request preparation currently fails closed because
+profiler v0.6.0's strict catalog API rejects the published definition identity.
+The five-case cluster contract below remains required, not a passing result on
+this branch. See [the compatibility report](../PUBLISHED-MIGRATION.md).
 From the repository root:
 
 ```sh

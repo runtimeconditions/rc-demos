@@ -64,9 +64,12 @@ func Envelope(data []byte) ([]string, error) {
 		return nil, fail("profile_unusable", "conditions must be a list")
 	}
 	seen := map[string]bool{}
-	for _, c := range conditions {
+	for i, c := range conditions {
 		m, _ := c.(map[string]any)
 		name, _ := m["name"].(string)
+		if _, present := m["name"]; !present {
+			name = fmt.Sprintf("conditions[%d]", i)
+		}
 		kind, _ := m["kind"].(string)
 		if name == "" || kind == "" || seen[name] {
 			return nil, fail("profile_unusable", "Conditions need unique names and kinds")

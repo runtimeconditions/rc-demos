@@ -8,17 +8,14 @@ workload:
     uri: github.com/runtimeconditions/rc-demos/apps/request-logger-http
     version: dev
 extensions:
-    - https://runtimeconditions.io/extensions/common-integrations:v1alpha1
-    - https://runtimeconditions.io/extensions/env-configuration:v1alpha1
+    - https://runtimeconditions.io/extensions/common-integrations/v1alpha1/runtimeconditions.extension.yaml
+    - https://runtimeconditions.io/extensions/env-configuration/v1alpha1/runtimeconditions.extension.yaml
 conditions:
-    - name: todos-api
-      kind: api
+    - configuration:
+        env:
+            - name: TODOS_API_URL
+              property: baseUrl
       interface:
-        type: http
-        spec:
-            format: openapi
-            uri: catalog://api/default/todos-api
-            version: 1.0.0
         operations:
             - method: GET
               path: /todos/{id}
@@ -26,22 +23,23 @@ conditions:
                 completed: boolean
                 id: integer
                 title: string
-      configuration:
-        env:
-            - property: baseUrl
-              name: TODOS_API_URL
-    - name: request-cache
-      kind: cache
-      interface:
-        type: key_value
-        engine: redis
-      configuration:
+        spec:
+            format: openapi
+            uri: catalog://api/default/todos-api
+            version: 1.0.0
+        type: http
+      kind: api
+    - configuration:
         alternatives:
             - env:
-                - property: url
-                  name: REDIS_URL
+                - name: REDIS_URL
+                  property: url
             - env:
-                - property: hostname
-                  name: REDIS_HOST
-                - property: port
-                  name: REDIS_PORT
+                - name: REDIS_HOST
+                  property: hostname
+                - name: REDIS_PORT
+                  property: port
+      interface:
+        engine: redis
+        type: key_value
+      kind: cache

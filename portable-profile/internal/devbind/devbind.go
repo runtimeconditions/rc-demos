@@ -161,6 +161,9 @@ func parse(data []byte) ([]condition, error) {
 	for i, item := range rawConditions {
 		raw, _ := item.(map[string]any)
 		name, _ := raw["name"].(string)
+		if _, present := raw["name"]; !present {
+			name = fmt.Sprintf("conditions[%d]", i)
+		}
 		kind, _ := raw["kind"].(string)
 		if name == "" || kind == "" {
 			problems = append(problems, fmt.Sprintf("conditions[%d] must have a name and kind", i))

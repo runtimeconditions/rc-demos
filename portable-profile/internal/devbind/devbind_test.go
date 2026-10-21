@@ -49,7 +49,6 @@ const todosCondition = `
           name: TODOS_API_URL
 `
 
-
 const todosSpecOnlyCondition = `
   - name: todos-api
     kind: api
@@ -196,7 +195,6 @@ func TestOperationsTakePrecedenceOverConflictingSpec(t *testing.T) {
 	}
 }
 
-
 func TestBindsTodosAPIWhenVersionConstraintIsSatisfied(t *testing.T) {
 	for _, constraint := range []string{"'1.0.0'", "'=1.0.0'", "'^1.0.0'", "'>=1.0.0'", "'~1.0.0'", "'<=1.0.0'", "'<2.0.0'"} {
 		t.Run(constraint, func(t *testing.T) {
@@ -305,12 +303,23 @@ func TestRejectsUnprovidedProperty(t *testing.T) {
 }
 
 func TestRejectsInvalidEnvelope(t *testing.T) {
-	_, err := Bind([]byte("apiVersion: v1\nkind: ConfigMap\nconditions:\n  - kind: api\n"), testEnv)
+	_, err := Bind([]byte("apiVersion: v1\nkind: ConfigMap\nconditions:\n  - name: \"\"\n    kind: api\n"), testEnv)
 	var invalid *InvalidProfileError
 	if !errors.As(err, &invalid) {
 		t.Fatalf("expected InvalidProfileError, got %v", err)
 	}
 	if len(invalid.Problems) != 3 {
 		t.Fatalf("expected apiVersion, kind and name problems, got %v", invalid.Problems)
+	}
+}
+
+func TestReleasedBindingsPermitUnnamedConditions(t *testing.T) {
+	data := profileWith(strings.Replace(todosCondition, "  - name: todos-api\n    kind: api", "  - kind: api", 1))
+	bindings, err := Bind(data, testEnv)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(bindings) != 1 || bindings[0].Condition != "conditions[0]" {
+		t.Fatalf("%+v", bindings)
 	}
 }

@@ -26,8 +26,9 @@ This tree contains runnable examples and downstream adapter assets.
 
 ## Generate the Request Logger Profile
 
-With `extensions` and `go-rc-profiler` cloned beside `rc-demos`, run this from
-the repository root:
+Use Go 1.25+ and run this from the repository root. The script downloads the
+checksum-pinned official profiler v0.6.0 binary and released binding modules;
+no sibling checkout is needed:
 
 ```sh
 portable-profile/scripts/generate-profile.sh

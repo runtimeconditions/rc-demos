@@ -48,7 +48,7 @@ func catalogRoot() string {
 	if root := os.Getenv("EXTENSIONS_ROOT"); root != "" {
 		return root
 	}
-	return "../../extensions/catalog"
+	return ""
 }
 func write(t *testing.T, path string, data []byte) {
 	t.Helper()
@@ -285,7 +285,7 @@ func TestConsumerDependencyBoundary(t *testing.T) {
 	if err != nil {
 		t.Fatalf("%v: %s", err, output)
 	}
-	for _, forbidden := range []string{"go-rc-profiler", "jsonschema", "/internal/producer"} {
+	for _, forbidden := range []string{"go-rc-profiler", "rc-extension-resolver", "jsonschema", "/internal/producer"} {
 		if bytes.Contains(output, []byte(forbidden)) {
 			t.Fatalf("consumer links semantic validator: %s", forbidden)
 		}

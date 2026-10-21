@@ -7,13 +7,11 @@ import (
 	"crypto/ed25519"
 	"encoding/json"
 	"fmt"
-	"io/fs"
 	"os"
 	"path/filepath"
 
 	"github.com/runtimeconditions/go-rc-profiler/extensioncheck"
 	"github.com/runtimeconditions/rc-demos/validated-profile-handoff/handoff"
-	"gopkg.in/yaml.v3"
 )
 
 type Artifacts struct {
@@ -30,57 +28,20 @@ func Validate(profile []byte, catalog string, key ed25519.PrivateKey, producerDi
 	if err != nil {
 		return nil, err
 	}
-	// The upstream API accepts directories, not an in-memory catalog. Copy the
-	// definitions once, index by metadata.id, and resolve against that private copy.
 	snapshot, err := os.MkdirTemp("", "validation-catalog-")
 	if err != nil {
 		return nil, err
 	}
 	defer os.RemoveAll(snapshot)
-	definitions := map[string][]byte{}
-	err = filepath.WalkDir(catalog, func(path string, entry fs.DirEntry, err error) error {
-		if err != nil {
-			return err
-		}
-		if entry.IsDir() {
-			switch entry.Name() {
-			case ".git", "vendor", "node_modules":
-				return filepath.SkipDir
-			}
-			return nil
-		}
-		if filepath.Ext(path) != ".yaml" && filepath.Ext(path) != ".yml" {
-			return nil
-		}
-		data, err := os.ReadFile(path)
-		if err != nil {
-			return err
-		}
-		var doc struct {
-			Kind     string `yaml:"kind"`
-			Metadata struct {
-				ID string `yaml:"id"`
-			} `yaml:"metadata"`
-		}
-		if err := yaml.Unmarshal(data, &doc); err != nil {
-			return fmt.Errorf("%s: %w", path, err)
-		}
-		if doc.Kind != "RuntimeConditionsExtensionDefinition" {
-			return nil
-		}
-		if doc.Metadata.ID == "" {
-			return fmt.Errorf("%s: missing extension ID", path)
-		}
-		if _, exists := definitions[doc.Metadata.ID]; exists {
-			return fmt.Errorf("duplicate extension ID %s", doc.Metadata.ID)
-		}
-		definitions[doc.Metadata.ID] = data
-		return os.WriteFile(filepath.Join(snapshot, handoff.Digest(data)+".yaml"), data, 0600)
-	})
+	definitions, err := resolveSnapshot(ids, catalog, snapshot)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("extension resolution: %w", err)
 	}
-	closure, err := extensioncheck.ResolveExtensionClosure(ids, extensioncheck.ProfileOptions{CatalogRoots: []string{snapshot}})
+	refs := make([]extensioncheck.ExtensionReference, len(ids))
+	for i, id := range ids {
+		refs[i] = extensioncheck.ExtensionReference{ID: id}
+	}
+	closure, err := extensioncheck.ResolveExtensionClosure(refs, extensioncheck.ProfileOptions{CatalogRoots: []string{snapshot}})
 	if err != nil {
 		return nil, fmt.Errorf("extension resolution: %w", err)
 	}
@@ -94,7 +55,7 @@ func Validate(profile []byte, catalog string, key ed25519.PrivateKey, producerDi
 	evidence := handoff.Evidence{Format: handoff.Format, ProfileSHA256: handoff.Digest(profile), Validator: handoff.Validator, ProducerSHA256: producerDigest, Steps: append([]string(nil), handoff.Steps...), Extensions: []handoff.Extension{}}
 	artifacts := &Artifacts{Profile: profile, Extensions: map[string][]byte{}}
 	for _, id := range closure {
-		data, exists := definitions[id]
+		data, exists := definitions[id.ID]
 		if !exists {
 			return nil, fmt.Errorf("resolved definition unavailable: %s", id)
 		}
@@ -102,7 +63,7 @@ func Validate(profile []byte, catalog string, key ed25519.PrivateKey, producerDi
 		if err := os.WriteFile(filepath.Join(resolved, digest+".yaml"), data, 0600); err != nil {
 			return nil, err
 		}
-		evidence.Extensions = append(evidence.Extensions, handoff.Extension{ID: id, SHA256: digest})
+		evidence.Extensions = append(evidence.Extensions, handoff.Extension{ID: id.ID, SHA256: digest})
 		artifacts.Extensions[digest] = data
 	}
 	if err := extensioncheck.ValidateProfileYAML(profile, extensioncheck.ProfileOptions{CatalogRoots: []string{resolved}}); err != nil {
