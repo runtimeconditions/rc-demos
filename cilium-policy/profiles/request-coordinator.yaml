@@ -6,8 +6,8 @@ workload:
   uri: https://github.com/runtimeconditions/rc-demos/tree/main/cilium-policy/apps/resource-demo/services/request-coordinator
   version: dev
 extensions:
-  - https://runtimeconditions.io/extensions/common-integrations/v1alpha1/runtimeconditions.extension.yaml
-  - https://runtimeconditions.io/extensions/env-configuration/v1alpha1/runtimeconditions.extension.yaml
+  - https://runtimeconditions.io/extensions/rc/common-integrations/v1alpha1/runtimeconditions.extension.yaml
+  - https://runtimeconditions.io/extensions/rc/env-configuration/v1alpha1/runtimeconditions.extension.yaml
 conditions:
   - name: available-stock-capability
     kind: api
