@@ -1,24 +1,29 @@
 package main
 
 import (
-	common "github.com/runtimeconditions/extensions/catalog/rc/common-integrations/go"
-	env "github.com/runtimeconditions/extensions/catalog/rc/env-configuration/go"
+	"runtimeconditions.io/x/rc/common"
+	"runtimeconditions.io/x/rc/env"
 )
 
+// Generated binding declarations are inert; the profiler reads their typed values.
 func declaration() {
-	if 1 != 1 {
-		common.API("todos-api",
-			common.Spec("openapi", "catalog://api/default/todos-api", "1.0.0"),
-			common.GET("/todos/{id}", common.Response[Todo]()),
-			env.Env("baseUrl", "TODOS_API_URL"),
-		)
-		common.Cache("request-cache",
-			common.KeyValue(common.Redis),
-			env.EnvAlternative(env.Env("url", "REDIS_URL")),
-			env.EnvAlternative(
-				env.Env("hostname", "REDIS_HOST"),
-				env.Env("port", "REDIS_PORT"),
-			),
-		)
-	}
+	common.Api(
+		common.Http{
+			Spec: &common.Spec{Format: common.FormatOpenapi, Uri: "catalog://api/default/todos-api", Version: &[]string{"1.0.0"}[0]},
+			Operations: common.Operations{{Method: common.MethodGet, Path: "/todos/{id}", ResponseSchema: common.ResponseSchemaMap{
+				"completed": common.SimpleSchemaString("boolean"), "id": common.SimpleSchemaString("integer"), "title": common.SimpleSchemaString("string"),
+			}}},
+		},
+		env.HttpConfiguration{Env: env.HttpConfigurationEnv{{Name: "TODOS_API_URL", Property: env.HttpConfigurationEnvPropertyBaseUrl}}},
+	)
+	common.Cache(
+		common.KeyValue{Engine: &[]common.KeyValueEngine{common.KeyValueEngineRedis}[0]},
+		env.KeyValueConfiguration{Alternatives: env.KeyValueConfigurationAlternatives{
+			{Env: env.KeyValueConfigurationAlternativesEnv{{Name: "REDIS_URL", Property: env.KeyValueConfigurationAlternativesEnvPropertyUrl}}},
+			{Env: env.KeyValueConfigurationAlternativesEnv{
+				{Name: "REDIS_HOST", Property: env.KeyValueConfigurationAlternativesEnvPropertyHostname},
+				{Name: "REDIS_PORT", Property: env.KeyValueConfigurationAlternativesEnvPropertyPort},
+			}},
+		}},
+	)
 }

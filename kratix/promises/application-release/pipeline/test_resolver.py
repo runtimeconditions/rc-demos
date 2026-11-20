@@ -102,7 +102,7 @@ class SupportEvaluationTest(ResolverTestCase):
         conditions[1]["interface"]["engine"] = "memcached"
         with self.assertRaises(resolver.UnsupportedConditionError) as ctx:
             resolver.resolve(self.release_with_conditions(conditions))
-        self.assertEqual([c.name for c in ctx.exception.conditions], ["request-cache"])
+        self.assertEqual([c.name for c in ctx.exception.conditions], ["conditions[1]"])
 
     def test_rejects_property_the_platform_cannot_provide(self):
         conditions = self.canonical_conditions()
@@ -187,7 +187,7 @@ class DeclaredAPISemanticsTest(ResolverTestCase):
         conditions[0]["interface"]["spec"]["uri"] = "https://example.com/todos.openapi.yaml"
         with self.assertRaises(resolver.UnsupportedConditionError) as ctx:
             resolver.resolve(self.release_with_conditions(conditions))
-        self.assertEqual([c.name for c in ctx.exception.conditions], ["todos-api"])
+        self.assertEqual([c.name for c in ctx.exception.conditions], ["conditions[0]"])
 
     def test_non_openapi_format_is_unsupported(self):
         conditions = self.spec_only_conditions()
@@ -229,6 +229,21 @@ class VersionConstraintTest(unittest.TestCase):
 
 
 class ErrorCategoryTest(ResolverTestCase):
+    def test_unnamed_conditions_resolve_without_rewriting_profile_bytes(self):
+        release = self.materialized_release()
+        original = release["spec"]["profile"]
+        resolver.resolve(release)
+        self.assertEqual(original, release["spec"]["profile"])
+
+    def test_explicit_empty_or_duplicate_names_remain_invalid(self):
+        for names in (("", "cache"), ("same", "same")):
+            with self.subTest(names=names):
+                conditions = self.canonical_conditions()
+                for condition, name in zip(conditions, names):
+                    condition["name"] = name
+                with self.assertRaises(resolver.ProfileError):
+                    resolver.resolve(self.release_with_conditions(conditions))
+
     def test_malformed_profile_is_a_profile_error(self):
         release = self.materialized_release()
         release["spec"]["profile"] = "apiVersion: v1\nkind: ConfigMap\nconditions:\n  - kind: api\n"

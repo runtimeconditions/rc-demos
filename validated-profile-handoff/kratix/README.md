@@ -20,7 +20,8 @@ flowchart TD
 
 `promise.py` derives an opt-in `validated-application-release` Promise from the
 existing ApplicationRelease Promise. It leaves that original Promise, its
-resolver, and the portable-profile workflow unchanged. The new platform request
+fulfillment behavior unchanged. Both consumers now accept optional Condition
+names from the released bindings; only diagnostic labels change. The new platform request
 kind is `ValidatedApplicationRelease`, **not a new Runtime Conditions resource**.
 Render the inspectable manifest with:
 
@@ -74,8 +75,18 @@ rejection terminates promptly rather than becoming a retry loop.
 
 ## Run and inspect
 
-Prerequisites: Docker, Go 1.25+, Python with PyYAML, kubectl, KinD, and the sibling
-profiler/extensions checkouts at the revisions recorded in the parent README.
+Prerequisites: Docker, Go 1.27.3, Python with PyYAML, kubectl, and KinD.
+Published Go binding modules and the checksum-pinned `rc-cli` release replace
+sibling checkouts. Export `RC_CLI="$(sh portable-profile/scripts/install-rc.sh)"`
+from the repository root for a local run. The producer validates the exact
+extension snapshot using `rc profile validate --catalog`. Live preparation
+retrieves definition URLs over HTTPS, with no local fallback.
+
+**Draft publication limitation:** the official published definition URLs
+returned HTTP 404 in CI on November 19, 2026. The five-case cluster contract
+below remains required, and cannot pass until valid definitions are published
+at their declared URLs. Offline fixture tests are not a substitute for this
+real-cluster acceptance. See [the compatibility report](../PUBLISHED-MIGRATION.md).
 From the repository root:
 
 ```sh

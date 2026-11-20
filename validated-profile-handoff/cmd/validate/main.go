@@ -11,12 +11,12 @@ import (
 
 func main() {
 	profile := flag.String("profile", "", "Profile artifact")
-	catalog := flag.String("catalog", "", "local upstream extension catalog")
+	catalog := flag.String("catalog", "", "explicit offline catalog directory (default: published HTTPS definitions)")
 	key := flag.String("key", "", "trusted pipeline's private key")
 	out := flag.String("out", "", "new bundle directory")
 	flag.Parse()
-	if *profile == "" || *catalog == "" || *key == "" || *out == "" {
-		fmt.Fprintln(os.Stderr, "-profile, -catalog, -key, and -out are required")
+	if *profile == "" || *key == "" || *out == "" {
+		fmt.Fprintln(os.Stderr, "-profile, -key, and -out are required")
 		os.Exit(2)
 	}
 	if err := run(*profile, *catalog, *key, *out); err != nil {

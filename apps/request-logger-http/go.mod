@@ -3,10 +3,6 @@ module github.com/runtimeconditions/rc-demos/apps/request-logger-http
 go 1.25.0
 
 require (
-	github.com/runtimeconditions/extensions/catalog/rc/common-integrations/go v0.0.0
-	github.com/runtimeconditions/extensions/catalog/rc/env-configuration/go v0.0.0
+	runtimeconditions.io/x/rc/common v0.1.0
+	runtimeconditions.io/x/rc/env v0.1.0
 )
-
-replace github.com/runtimeconditions/extensions/catalog/rc/common-integrations/go => ../../../extensions/catalog/rc/common-integrations/go
-
-replace github.com/runtimeconditions/extensions/catalog/rc/env-configuration/go => ../../../extensions/catalog/rc/env-configuration/go

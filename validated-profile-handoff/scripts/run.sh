@@ -4,7 +4,7 @@ set -eu
 script_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 demo=$(CDPATH= cd -- "$script_dir/.." && pwd)
 repo=$(CDPATH= cd -- "$demo/.." && pwd)
-catalog=${EXTENSIONS_ROOT:-"$repo/../extensions/catalog"}
+catalog=${EXTENSIONS_ROOT:-}
 
 "$repo/portable-profile/scripts/generate-profile.sh" --check
 mkdir -p "$demo/generated"

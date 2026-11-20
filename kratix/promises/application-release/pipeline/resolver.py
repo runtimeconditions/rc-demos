@@ -217,6 +217,8 @@ def read_profile_conditions(text: str) -> list[dict[str, Any]]:
 
     seen: set[str] = set()
     for index, condition in enumerate(conditions):
+        if isinstance(condition, dict) and "name" not in condition:
+            condition["name"] = f"conditions[{index}]"
         if not isinstance(condition, dict) or not condition.get("name") or not condition.get("kind"):
             problems.append(f"conditions[{index}] must have a name and kind")
             continue
