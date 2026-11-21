@@ -7,7 +7,7 @@ set -eu
 
 script_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 repo_root=$(CDPATH= cd -- "$script_dir/../.." && pwd)
-rc=${RC:-rc}
+rc=${RC_CLI:-${RC:-$(sh "$script_dir/install-rc.sh")}}
 profile="$repo_root/artifacts/request-logger-http.profile.yaml"
 
 mode=${1:-generate}
@@ -15,7 +15,7 @@ mode=${1:-generate}
 generated=$(mktemp)
 trap 'rm -f "$generated" "$generated.raw"' EXIT
 
-# Needs the rc CLI on PATH (or RC=/path/to/rc).
+go -C "$repo_root/apps/request-logger-http" mod download
 "$rc" profile generate \
   --dir "$repo_root/apps/request-logger-http" \
   --name request-logger-http \

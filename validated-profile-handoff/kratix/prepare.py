@@ -44,7 +44,7 @@ def prepare(out):
         requests = {}
         for name, source, signer in (("valid", profile, "trusted"), ("unsupported", unsupported, "trusted"), ("untrusted", profile, "rogue")):
             bundle = out / name
-            subprocess.run([str(private / "validate"), "-profile", str(source), "-catalog", str(ROOT.parent / "extensions/catalog"),
+            subprocess.run([str(private / "validate"), "-profile", str(source),
                             "-key", str(private / signer / "signer.key"), "-out", str(bundle)], check=True)
             requests[name] = request(bundle, "handoff-" + name)
         for name in ("profile-changed", "extension-changed"):

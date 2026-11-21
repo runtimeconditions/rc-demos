@@ -4,7 +4,9 @@ set -eu
 script_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 demo=$(CDPATH= cd -- "$script_dir/.." && pwd)
 repo=$(CDPATH= cd -- "$demo/.." && pwd)
-catalog=${EXTENSIONS_ROOT:-"$repo/../extensions/catalog"}
+catalog=${EXTENSIONS_ROOT:-}
+RC_CLI=${RC_CLI:-${RC:-$(sh "$repo/portable-profile/scripts/install-rc.sh")}}
+export RC_CLI
 
 "$repo/portable-profile/scripts/generate-profile.sh" --check
 mkdir -p "$demo/generated"
