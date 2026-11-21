@@ -1,9 +1,8 @@
 FROM python:3.12-slim
 
 WORKDIR /app
-COPY extensions ./extensions
-COPY rc-demos/apps/request-logger-http-python/pyproject.toml ./pyproject.toml
-COPY rc-demos/apps/request-logger-http-python/src ./src
+COPY pyproject.toml ./pyproject.toml
+COPY src ./src
+RUN pip install --no-cache-dir .
 
-ENV PYTHONPATH=/app/src:/app/extensions/common-integrations/python:/app/extensions/env-configuration/python
 ENTRYPOINT ["python", "-m", "request_logger_http.app"]

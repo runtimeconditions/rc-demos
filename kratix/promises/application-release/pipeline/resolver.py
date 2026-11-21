@@ -215,14 +215,30 @@ def read_profile_conditions(text: str) -> list[dict[str, Any]]:
         problems.append(f"conditions must be a list, got {found}")
         conditions = []
 
-    seen: set[str] = set()
+    # Condition names are optional; generated profiles carry none. Name those
+    # that lack one after their kind (api-1, cache-1, ...) for messages.
+    seen: set[str] = {
+        c["name"] for c in conditions if isinstance(c, dict) and c.get("name") and c.get("kind")
+    }
+    explicit: set[str] = set()
+    per_kind: dict[str, int] = {}
     for index, condition in enumerate(conditions):
-        if not isinstance(condition, dict) or not condition.get("name") or not condition.get("kind"):
-            problems.append(f"conditions[{index}] must have a name and kind")
+        if not isinstance(condition, dict) or not condition.get("kind"):
+            problems.append(f"conditions[{index}] must have a kind")
             continue
-        if condition["name"] in seen:
-            problems.append(f"conditions[{index}]: duplicate condition name {condition['name']!r}")
-        seen.add(condition["name"])
+        if condition.get("name"):
+            if condition["name"] in explicit:
+                problems.append(f"conditions[{index}]: duplicate condition name {condition['name']!r}")
+            explicit.add(condition["name"])
+            continue
+        kind = condition["kind"]
+        while True:
+            per_kind[kind] = per_kind.get(kind, 0) + 1
+            derived = f"{kind}-{per_kind[kind]}"
+            if derived not in seen:
+                break
+        seen.add(derived)
+        condition["name"] = derived
 
     if problems:
         raise ProfileError("\n".join(problems))

@@ -1,25 +1,63 @@
-from runtimeconditions_common_integrations import Api, Cache, Http
-from runtimeconditions_env_configuration import EnvConfiguration
+from runtimeconditions_common_integrations import (
+    Format,
+    Http,
+    HttpOperationsItem,
+    KeyValue,
+    KeyValueEngine,
+    Method,
+    Spec,
+    api,
+    cache,
+)
+from runtimeconditions_env_configuration import (
+    HttpConfiguration,
+    HttpConfigurationEnvItem,
+    HttpConfigurationEnvItemProperty,
+    KeyValueConfiguration,
+    KeyValueConfigurationAlternativesItem,
+    KeyValueConfigurationAlternativesItemEnvItem,
+    KeyValueConfigurationAlternativesItemEnvItemProperty,
+)
 
-from .models import Todo
+api(
+    Http(
+        spec=Spec(format=Format.OPENAPI, uri="catalog://api/default/todos-api", version="1.0.0"),
+        operations=[HttpOperationsItem(method=Method.GET, path="/todos/{id}")],
+    ),
+    HttpConfiguration(
+        env=[
+            HttpConfigurationEnvItem(
+                name="TODOS_API_URL",
+                property=HttpConfigurationEnvItemProperty.BASE_URL,
+            )
+        ]
+    ),
+)
 
-
-def declare() -> None:
-    if False:
-        Api.declare(
-            "todos-api",
-            Api.spec("openapi", "catalog://api/default/todos-api", "1.0.0"),
-            Http.get("/todos/{id}", Http.response(Todo)),
-            EnvConfiguration.env("baseUrl", "TODOS_API_URL"),
-        )
-
-        Cache.declare(
-            "request-cache",
-            Cache.key_value(Cache.Engine.REDIS),
-            EnvConfiguration.env_alternative(EnvConfiguration.env("url", "REDIS_URL")),
-            EnvConfiguration.env_alternative(
-                EnvConfiguration.env("hostname", "REDIS_HOST"),
-                EnvConfiguration.env("port", "REDIS_PORT"),
+cache(
+    KeyValue(engine=KeyValueEngine.REDIS),
+    KeyValueConfiguration(
+        alternatives=[
+            KeyValueConfigurationAlternativesItem(
+                env=[
+                    KeyValueConfigurationAlternativesItemEnvItem(
+                        name="REDIS_URL",
+                        property=KeyValueConfigurationAlternativesItemEnvItemProperty.URL,
+                    )
+                ]
             ),
-        )
-
+            KeyValueConfigurationAlternativesItem(
+                env=[
+                    KeyValueConfigurationAlternativesItemEnvItem(
+                        name="REDIS_HOST",
+                        property=KeyValueConfigurationAlternativesItemEnvItemProperty.HOSTNAME,
+                    ),
+                    KeyValueConfigurationAlternativesItemEnvItem(
+                        name="REDIS_PORT",
+                        property=KeyValueConfigurationAlternativesItemEnvItemProperty.PORT,
+                    ),
+                ]
+            ),
+        ]
+    ),
+)

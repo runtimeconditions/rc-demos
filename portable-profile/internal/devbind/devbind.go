@@ -156,21 +156,43 @@ func parse(data []byte) ([]condition, error) {
 		problems = append(problems, fmt.Sprintf("conditions: %v", err))
 	}
 
-	seen := map[string]bool{}
+	// Condition names are optional; generated profiles carry none. Name those
+	// that lack one after their kind (api-1, cache-1, ...) for messages.
+	taken := map[string]bool{}
+	for _, item := range rawConditions {
+		if raw, ok := item.(map[string]any); ok {
+			if name, _ := raw["name"].(string); name != "" {
+				taken[name] = true
+			}
+		}
+	}
+	explicit := map[string]bool{}
+	perKind := map[string]int{}
 	conditions := make([]condition, 0, len(rawConditions))
 	for i, item := range rawConditions {
 		raw, _ := item.(map[string]any)
 		name, _ := raw["name"].(string)
 		kind, _ := raw["kind"].(string)
-		if name == "" || kind == "" {
-			problems = append(problems, fmt.Sprintf("conditions[%d] must have a name and kind", i))
+		if kind == "" {
+			problems = append(problems, fmt.Sprintf("conditions[%d] must have a kind", i))
 			continue
 		}
-		if seen[name] {
-			problems = append(problems, fmt.Sprintf("conditions[%d]: duplicate condition name %q", i, name))
-			continue
+		if name != "" {
+			if explicit[name] {
+				problems = append(problems, fmt.Sprintf("conditions[%d]: duplicate condition name %q", i, name))
+				continue
+			}
+			explicit[name] = true
+		} else {
+			for {
+				perKind[kind]++
+				name = fmt.Sprintf("%s-%d", kind, perKind[kind])
+				if !taken[name] {
+					break
+				}
+			}
+			taken[name] = true
 		}
-		seen[name] = true
 		iface, _ := raw["interface"].(map[string]any)
 		configuration, _ := raw["configuration"].(map[string]any)
 		conditions = append(conditions, condition{name: name, kind: kind, iface: iface, configuration: configuration})

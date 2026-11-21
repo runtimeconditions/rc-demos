@@ -305,12 +305,32 @@ func TestRejectsUnprovidedProperty(t *testing.T) {
 }
 
 func TestRejectsInvalidEnvelope(t *testing.T) {
-	_, err := Bind([]byte("apiVersion: v1\nkind: ConfigMap\nconditions:\n  - kind: api\n"), testEnv)
+	_, err := Bind([]byte("apiVersion: v1\nkind: ConfigMap\nconditions:\n  - name: x\n"), testEnv)
 	var invalid *InvalidProfileError
 	if !errors.As(err, &invalid) {
 		t.Fatalf("expected InvalidProfileError, got %v", err)
 	}
 	if len(invalid.Problems) != 3 {
-		t.Fatalf("expected apiVersion, kind and name problems, got %v", invalid.Problems)
+		t.Fatalf("expected apiVersion, kind and condition kind problems, got %v", invalid.Problems)
+	}
+}
+
+func TestNamelessConditionsAreNamedAfterTheirKind(t *testing.T) {
+	todos := strings.Replace(todosCondition, "  - name: todos-api\n", "  - kind: api\n", 1)
+	todos = strings.Replace(todos, "    kind: api\n", "", 1)
+	cache := strings.Replace(redisCondition, "  - name: request-cache\n", "  - kind: cache\n", 1)
+	cache = strings.Replace(cache, "    kind: cache\n", "", 1)
+	bindings, err := Bind(profileWith(todos+cache), testEnv)
+	if err != nil {
+		t.Fatalf("nameless Conditions should bind: %v", err)
+	}
+	if len(bindings) != 2 || bindings[0].Condition != "api-1" || bindings[1].Condition != "cache-1" {
+		t.Fatalf("expected api-1 and cache-1, got %+v", bindings)
+	}
+
+	_, err = Bind(profileWith(strings.Replace(cache, "engine: redis", "engine: memcached", 1)), testEnv)
+	var unsupported *UnsupportedError
+	if !errors.As(err, &unsupported) || unsupported.Conditions[0].Name != "cache-1" {
+		t.Fatalf("expected cache-1 to be unsupported, got %v", err)
 	}
 }

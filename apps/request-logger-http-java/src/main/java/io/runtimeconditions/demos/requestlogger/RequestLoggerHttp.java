@@ -17,10 +17,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 public final class RequestLoggerHttp {
-    static {
-        Conditions.declare();
-    }
-
     private RequestLoggerHttp() {
     }
 

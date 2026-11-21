@@ -66,12 +66,18 @@ func Envelope(data []byte) ([]string, error) {
 	seen := map[string]bool{}
 	for _, c := range conditions {
 		m, _ := c.(map[string]any)
-		name, _ := m["name"].(string)
 		kind, _ := m["kind"].(string)
-		if name == "" || kind == "" || seen[name] {
-			return nil, fail("profile_unusable", "Conditions need unique names and kinds")
+		if kind == "" {
+			return nil, fail("profile_unusable", "Conditions need a kind")
 		}
-		seen[name] = true
+		// Names are optional. When present they must be nonempty and unique.
+		if rawName, present := m["name"]; present {
+			name, _ := rawName.(string)
+			if name == "" || seen[name] {
+				return nil, fail("profile_unusable", "Condition names must be nonempty and unique when present")
+			}
+			seen[name] = true
+		}
 	}
 	raw, ok := doc["extensions"].([]any)
 	if !ok {

@@ -7,10 +7,8 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 from urllib.parse import urlparse
 from urllib.request import urlopen
 
-from . import conditions
 
 
-conditions.declare()
 
 
 class Handler(BaseHTTPRequestHandler):

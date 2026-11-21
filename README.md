@@ -24,48 +24,77 @@ This tree contains runnable examples and downstream adapter assets.
 - `cilium-policy/` - a complete KinD, Cilium, Backstage, and microservice lab for
   building an RCProfile-to-CiliumNetworkPolicy adapter.
 
-## Generate the Request Logger Profile
+## The Request Logger apps
 
-With `extensions` and `go-rc-profiler` cloned beside `rc-demos`, run this from
-the repository root:
+The request logger exists in Go, Java and Python. Each declares the same two
+Conditions (the todos API and a Redis cache) with the published binding
+packages, so no sibling `extensions` checkout is needed:
+
+- Go: `runtimeconditions.io/x/rc/common` and `/env` (see `apps/request-logger-http/go.mod`)
+- Java: `io.runtimeconditions.bindings` on Maven Central (see the pom)
+- Python: `runtimeconditions-common-integrations` and `runtimeconditions-env-configuration` on PyPI
+
+Build each one on its own:
 
 ```sh
-portable-profile/scripts/generate-profile.sh
+(cd apps/request-logger-http && go mod download && go vet ./...)
+(cd apps/request-logger-http-java && mvn -q -B package)
+(cd apps/request-logger-http-python && pip install .)
 ```
 
-This writes `artifacts/request-logger-http.profile.yaml`, which both the
-development demo and the Kratix `ApplicationRelease` consume. Use `--check` to
-confirm the committed Profile still matches source.
+## Generate a Profile from an app
 
-The request logger is its own Go module:
+Install the `rc` CLI, then the profiler for the language:
 
 ```sh
-cd apps/request-logger-http
-go test ./...
+# rc CLI: Homebrew, or the apt / dnf repositories that setup.sh configures
+brew install runtimeconditions/tools/rc-cli
+curl -fsSL https://runtimeconditions.io/packages/setup.sh | sudo sh
+sudo apt install rc-cli          # or: sudo dnf install rc-cli
+
+# Java profiler (needs JDK 17+)
+brew install runtimeconditions/tools/rc-profiler-java    # or: sudo apt install rc-profiler-java
+
+# Python profiler: it finds the bindings through the environment it is installed in,
+# so it has no system package. Install it into the app's virtual environment and
+# put that environment's bin directory on PATH.
+python3 -m venv .venv && . .venv/bin/activate
+pip install runtimeconditions-profiler
 ```
 
-## Generate the Java Request Logger Profile
-
-From the repository root:
+Then generate:
 
 ```sh
-cd ../java-rc-profiler
-mvn -q package
+# Go (built into rc)
+rc profile generate --dir apps/request-logger-http --out request-logger-http.profile.yaml
 
-java -jar target/runtimeconditions-java-profiler-0.1.0-SNAPSHOT.jar generate \
-  --project ../rc-demos/apps/request-logger-http-java \
-  --classpath ../extensions/common-integrations/java:../extensions/env-configuration/java \
+# Java
+rc profile java generate --project apps/request-logger-http-java --resolve-build-classpath \
   --name request-logger-http \
   --workload-uri github.com/runtimeconditions/rc-demos/apps/request-logger-http-java \
   --workload-version dev
+
+# Python
+rc profile python generate --project apps/request-logger-http-python \
+  --name request-logger-http \
+  --workload-uri github.com/runtimeconditions/rc-demos/apps/request-logger-http-python \
+  --workload-version dev
 ```
 
-The Java demo is a Maven project:
+All three produce the same API and cache Conditions, with one difference: the Go
+profile also includes the HTTP response schema of the todos API (completed, id,
+title). The Java demo leaves it out because the Java profiler cannot yet read the
+enum constants that name the field types, and the Python demo does not declare it
+yet, so those two profiles omit it.
 
-```sh
-cd apps/request-logger-http-java
-mvn -q package
-```
+**Condition names.** The profilers do not give Conditions a `name` (it is
+optional in core 0.4.0). The Kratix resolver and the development binder name
+such Conditions after their kind (`api-1`, `cache-1`) in their messages.
+
+`portable-profile/scripts/generate-profile.sh` runs `rc profile generate` on the
+Go app (put `rc` on `PATH`, or set `RC=/path/to/rc`) and writes
+`artifacts/request-logger-http.profile.yaml`; use `--check` to confirm the
+committed Profile still matches source.
 
 ## Published Demo Images
 

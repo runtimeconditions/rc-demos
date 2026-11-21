@@ -10,9 +10,20 @@
   <properties>
     <maven.compiler.release>17</maven.compiler.release>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <runtimeconditions.commonintegrations.source>${project.basedir}/../../../extensions/common-integrations/java/src/main/java</runtimeconditions.commonintegrations.source>
-    <runtimeconditions.envconfiguration.source>${project.basedir}/../../../extensions/env-configuration/java/src/main/java</runtimeconditions.envconfiguration.source>
   </properties>
+
+  <dependencies>
+    <dependency>
+      <groupId>io.runtimeconditions.bindings</groupId>
+      <artifactId>runtimeconditions-common-integrations</artifactId>
+      <version>0.1.0</version>
+    </dependency>
+    <dependency>
+      <groupId>io.runtimeconditions.bindings</groupId>
+      <artifactId>runtimeconditions-env-configuration</artifactId>
+      <version>0.1.0</version>
+    </dependency>
+  </dependencies>
 
   <build>
     <plugins>
@@ -20,12 +31,6 @@
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-compiler-plugin</artifactId>
         <version>3.13.0</version>
-        <configuration>
-          <compilerArgs>
-            <arg>-sourcepath</arg>
-            <arg>${project.basedir}/src/main/java${path.separator}${runtimeconditions.commonintegrations.source}${path.separator}${runtimeconditions.envconfiguration.source}</arg>
-          </compilerArgs>
-        </configuration>
       </plugin>
     </plugins>
   </build>

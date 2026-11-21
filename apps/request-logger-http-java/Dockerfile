@@ -1,15 +1,14 @@
 FROM maven:3.9-eclipse-temurin-17 AS build
 
 WORKDIR /src
-COPY extensions ./extensions
-COPY rc-demos/apps/request-logger-http-java/pom.xml ./rc-demos/apps/request-logger-http-java/pom.xml
-COPY rc-demos/apps/request-logger-http-java/src ./rc-demos/apps/request-logger-http-java/src
-
-WORKDIR /src/rc-demos/apps/request-logger-http-java
-RUN mvn -q package
+COPY pom.xml ./pom.xml
+RUN mvn -q -B dependency:go-offline
+COPY src ./src
+RUN mvn -q -B package dependency:copy-dependencies -DoutputDirectory=target/lib
 
 FROM eclipse-temurin:17-jre
 
-COPY --from=build /src/rc-demos/apps/request-logger-http-java/target/classes /app
+COPY --from=build /src/target/classes /app/classes
+COPY --from=build /src/target/lib /app/lib
 
-ENTRYPOINT ["java", "-cp", "/app", "io.runtimeconditions.demos.requestlogger.RequestLoggerHttp"]
+ENTRYPOINT ["java", "-cp", "/app/classes:/app/lib/*", "io.runtimeconditions.demos.requestlogger.RequestLoggerHttp"]

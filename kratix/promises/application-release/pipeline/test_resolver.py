@@ -45,8 +45,14 @@ class ResolverTestCase(unittest.TestCase):
         release["spec"]["profile"] = yaml.safe_dump(profile)
         return release
 
-    def canonical_conditions(self):
-        return yaml.safe_load(PROFILE.read_text())["conditions"]
+    def canonical_conditions(self, named=True):
+        """The committed Profile's Conditions. Generated profiles carry no names, so name them here."""
+        conditions = yaml.safe_load(PROFILE.read_text())["conditions"]
+        if named:
+            names = {"api": "todos-api", "cache": "request-cache"}
+            for condition in conditions:
+                condition["name"] = names[condition["kind"]]
+        return conditions
 
     def spec_only_conditions(self):
         conditions = self.canonical_conditions()
@@ -96,6 +102,15 @@ class SupportEvaluationTest(ResolverTestCase):
             resolver.resolve(self.release_with_conditions(conditions))
         self.assertEqual([c.name for c in ctx.exception.conditions], ["site-analytics"])
         self.assertIn("'google.analytics'", str(ctx.exception))
+
+    def test_conditions_without_names_are_accepted_and_named_by_kind(self):
+        conditions = self.canonical_conditions(named=False)
+        resolver.resolve(self.release_with_conditions(conditions))
+
+        conditions[1]["interface"]["engine"] = "memcached"
+        with self.assertRaises(resolver.UnsupportedConditionError) as ctx:
+            resolver.resolve(self.release_with_conditions(conditions))
+        self.assertEqual([c.name for c in ctx.exception.conditions], ["cache-1"])
 
     def test_rejects_non_redis_cache_instead_of_skipping_it(self):
         conditions = self.canonical_conditions()

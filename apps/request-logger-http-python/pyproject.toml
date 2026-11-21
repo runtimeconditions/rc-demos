@@ -6,17 +6,10 @@ build-backend = "setuptools.build_meta"
 name = "request-logger-http-python"
 version = "0.1.0"
 requires-python = ">=3.10"
-dependencies = []
-
-[tool.runtimeconditions]
-package-paths = [
-  "../../../extensions/common-integrations/python",
-  "../../../extensions/env-configuration/python",
+dependencies = [
+  "runtimeconditions-common-integrations==0.2.0",
+  "runtimeconditions-env-configuration==0.2.0",
 ]
-
-[tool.uv.sources]
-runtimeconditions-common-integrations = { path = "../../../extensions/common-integrations/python" }
-runtimeconditions-env-configuration = { path = "../../../extensions/env-configuration/python" }
 
 [tool.setuptools]
 package-dir = {"" = "src"}
