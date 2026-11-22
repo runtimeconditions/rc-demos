@@ -13,27 +13,29 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
+	"strings"
 
 	"gopkg.in/yaml.v3"
 )
 
 // These names and fields are private to this experiment, not RC resource types.
 const Format = "rc-demos-handoff-experiment-1"
-const Validator = "github.com/runtimeconditions/go-rc-profiler/extensioncheck"
+const Validator = "runtimeconditions/rc-cli/profile-validate"
 
-var Steps = []string{"ResolveExtensionClosure", "ValidateProfileYAML"}
+var Steps = []string{"snapshot published extension closure", "rc profile validate --catalog"}
 
 type Extension struct {
 	ID     string `json:"id"`
 	SHA256 string `json:"sha256"`
 }
 type Evidence struct {
-	Format         string      `json:"experiment"`
-	ProfileSHA256  string      `json:"profile_sha256"`
-	Validator      string      `json:"validator"`
-	ProducerSHA256 string      `json:"producer_sha256"`
-	Steps          []string    `json:"completed_calls"`
-	Extensions     []Extension `json:"resolved_extensions"`
+	Format          string      `json:"experiment"`
+	ProfileSHA256   string      `json:"profile_sha256"`
+	Validator       string      `json:"validator"`
+	ValidatorSHA256 string      `json:"validator_sha256"`
+	ProducerSHA256  string      `json:"producer_sha256"`
+	Steps           []string    `json:"completed_calls"`
+	Extensions      []Extension `json:"resolved_extensions"`
 }
 type Failure struct{ Category, Detail string }
 
@@ -87,11 +89,25 @@ func Envelope(data []byte) ([]string, error) {
 	seen = map[string]bool{}
 	for _, v := range raw {
 		id, ok := v.(string)
-		if !ok || id == "" || seen[id] {
+		if !ok || id == "" {
 			return nil, fail("profile_unusable", "extensions need unique nonempty IDs")
 		}
-		seen[id] = true
-		ids = append(ids, id)
+		// The published generator can encode complete definition URLs as
+		// <short-https-url>:<version>. Expand the reference for snapshot
+		// retrieval and signed identity comparisons, without changing Profile
+		// artifact bytes.
+		fullID := id
+		if strings.HasPrefix(id, "https://") {
+			lastColon, lastSlash := strings.LastIndex(id, ":"), strings.LastIndex(id, "/")
+			if lastColon > lastSlash && lastColon < len(id)-1 {
+				fullID = id[:lastColon] + "/" + id[lastColon+1:] + "/runtimeconditions.extension.yaml"
+			}
+		}
+		if seen[fullID] {
+			return nil, fail("profile_unusable", "duplicate canonical extension ID")
+		}
+		seen[fullID] = true
+		ids = append(ids, fullID)
 	}
 	slices.Sort(ids)
 	return ids, nil
@@ -122,7 +138,7 @@ func Verify(bundle string, trusted ed25519.PublicKey) ([]byte, error) {
 	if decoder.Decode(new(any)) != io.EOF {
 		return nil, fail("evidence_missing_or_malformed", "expected one JSON document")
 	}
-	if e.Format != Format || e.Validator != Validator || !digestOK(e.ProfileSHA256) || !digestOK(e.ProducerSHA256) || !slices.Equal(e.Steps, Steps) || e.Extensions == nil {
+	if e.Format != Format || e.Validator != Validator || !digestOK(e.ProfileSHA256) || !digestOK(e.ValidatorSHA256) || !digestOK(e.ProducerSHA256) || !slices.Equal(e.Steps, Steps) || e.Extensions == nil {
 		return nil, fail("evidence_missing_or_malformed", "unrecognized experiment evidence or incomplete validation calls")
 	}
 	evidenceIDs := make([]string, 0, len(e.Extensions))

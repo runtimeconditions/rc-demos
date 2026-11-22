@@ -43,3 +43,31 @@ func TestEnvelopeRejectsBadConditions(t *testing.T) {
 		}
 	}
 }
+
+// Reference expansion is for evidence identity only; the signed Profile bytes
+// must remain unchanged, including its short references and absent names.
+func TestEnvelopeCanonicalExtensionIDs(t *testing.T) {
+	const short = "https://runtimeconditions.io/extensions/rc/common-integrations:v1alpha2"
+	const full = "https://runtimeconditions.io/extensions/rc/common-integrations/v1alpha2/runtimeconditions.extension.yaml"
+	for _, ref := range []string{short, full} {
+		profile := []byte(strings.ReplaceAll(string(profileWithConditions("  - kind: api\n")), short, ref))
+		original := string(profile)
+		ids, err := Envelope(profile)
+		if err != nil || len(ids) != 1 || ids[0] != full {
+			t.Fatalf("%s: got %v, %v", ref, ids, err)
+		}
+		if string(profile) != original {
+			t.Fatal("Profile bytes changed")
+		}
+	}
+	profile := []byte(strings.ReplaceAll(string(profileWithConditions("  - kind: api\n")), short, short+"\n  - "+full))
+	if _, err := Envelope(profile); err == nil || !strings.Contains(err.Error(), "duplicate canonical extension ID") {
+		t.Fatalf("duplicate alias accepted: %v", err)
+	}
+}
+
+func TestEnvelopeExplicitNameDoesNotCollideWithUnnamedCondition(t *testing.T) {
+	if _, err := Envelope(profileWithConditions("  - kind: api\n  - kind: cache\n    name: conditions[0]\n")); err != nil {
+		t.Fatalf("diagnostic labels must not reserve names: %v", err)
+	}
+}

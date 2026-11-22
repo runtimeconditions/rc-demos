@@ -14,6 +14,7 @@ on:
   push:
     branches:
       - main
+      - chore/published-rc-dependencies
     paths:
       - ".github/workflows/portable-profile.yaml"
       - "apps/request-logger-http/**"
@@ -43,10 +44,11 @@ jobs:
           cache-dependency-path: |
             rc-demos/apps/request-logger-http/go.sum
             rc-demos/portable-profile/go.sum
-      - name: Install the rc CLI
+      - name: Install pinned rc-cli
+        working-directory: rc-demos
         run: |
-          curl -fsSL https://runtimeconditions.io/packages/setup.sh | sudo sh
-          sudo apt-get install -y rc-cli
+          rc_path="$(sh portable-profile/scripts/install-rc.sh)"
+          echo "RC_CLI=$rc_path" >> "$GITHUB_ENV"
       - name: Committed Profile matches application source
         working-directory: rc-demos
         run: portable-profile/scripts/generate-profile.sh --check
