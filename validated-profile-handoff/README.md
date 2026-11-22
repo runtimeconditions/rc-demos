@@ -1,9 +1,9 @@
 # Validated Profile handoff
 
-> Rebased onto merged [PR #10](https://github.com/runtimeconditions/rc-demos/pull/10).
-> Live catalog and offline fixture acceptance pass with the published `v1alpha2`
-> definitions and checksum-pinned `rc-cli` v0.6.0. See
-> [PUBLISHED-MIGRATION.md](PUBLISHED-MIGRATION.md) for scope and verification.
+> Normal handoffs validate against the versioned published extension catalog;
+> local YAML snapshots are offline test fixtures only. See
+> [Published catalog and validation evidence](PUBLISHED-MIGRATION.md) for
+> pinned dependencies and reproduction commands.
 
 **Same portable Profile + trusted upstream validation evidence + independent
 consumer support evaluation.**
