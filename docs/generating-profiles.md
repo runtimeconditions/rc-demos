@@ -35,7 +35,7 @@ rc profile python generate --project apps/request-logger-http-python \
 ```
 
 All three produce the same API and cache Conditions, with one difference: the Go
-profile also includes the HTTP response schema of the todos API (completed, id,
+profile also includes the HTTP response schema of the Todos API (completed, id,
 title). The Java demo leaves it out because the Java profiler cannot yet read the
 enum constants that name the field types, and the Python demo does not declare it
 yet, so those two profiles omit it.

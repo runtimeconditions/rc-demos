@@ -9,7 +9,7 @@ platforms: a local development binder, Kratix, and a KinD + Cilium + Backstage l
 A Runtime Conditions Profile is a portable, machine-readable list of what one workload
 needs at runtime: the APIs, caches, datastores, and environment configuration it depends
 on. The demos here show the whole loop. The workload declares the need once in its source,
-the [`rc` CLI](https://github.com/runtimeconditions/rc-cli) generates the profile,
+the [`rc` CLI](https://github.com/runtimeconditions/rc-cli) generates the Profile,
 validation checks it against the spec, and a platform fulfills it.
 
 **Example scenario:** everything in this repo revolves around one workload, the
@@ -22,11 +22,11 @@ is exactly what the demos in this repo fulfill, in a local dev environment and o
 - Profile specification: <https://github.com/runtimeconditions/spec> defines the profile
   format every demo profile follows
 - Tooling: [`rc-cli`](https://github.com/runtimeconditions/rc-cli) generates and validates
-  the profiles committed under `artifacts/`
+  the Profiles committed under `artifacts/`
 
 ## Quickstart
 
-Check the committed demo profile against the core schema embedded in `rc` and the
+Check the committed demo Profile against the core schema embedded in `rc` and the
 definitions of the extensions it declares:
 
 ```console
@@ -58,7 +58,7 @@ lighter-weight experiments.
 | [`apps/request-logger-http-python/`](apps/request-logger-http-python/) | Python workload declaring the same Conditions via the PyPI bindings |
 | [`apps/todos-api/`](apps/todos-api/) | Simple provider API used by the request logger demo |
 | [`artifacts/`](artifacts/) | The generated, committed request-logger Profile ([`request-logger-http.profile.yaml`](artifacts/request-logger-http.profile.yaml)) shared by the consumers |
-| [`catalog/apis/`](catalog/apis/) | OpenAPI and catalog files for the todos API, used by the adapter demos |
+| [`catalog/apis/`](catalog/apis/) | OpenAPI and catalog files for the Todos API, used by the adapter demos |
 | [`portable-profile/`](portable-profile/) | One generated request-logger Profile consumed by both a local development environment and the Kratix deployment path |
 | [`kratix/`](kratix/) | Kratix Promises, manifests, and scripts that fulfill the Profile on a cluster |
 | [`validated-profile-handoff/`](validated-profile-handoff/) | Verifying trusted upstream validation evidence for exact Profile and extension artifacts before consumer support evaluation |
@@ -99,9 +99,9 @@ demo repo connects to directly:
   generates (`rc profile generate`) and validates (`rc profile validate`) the
   profiles in `artifacts/`; the [quickstart](#quickstart) validates one of them
 - [spec](https://github.com/runtimeconditions/spec): defines the Profile format;
-  `rc` pins the core schema at build time and the committed profiles follow it
+  `rc` pins the core schema at build time and the committed Profiles follow it
 - [extensions](https://github.com/runtimeconditions/extensions): the extension
-  vocabulary and schemas the profiles declare; the apps import the published binding
+  vocabulary and schemas the Profiles declare; the apps import the published binding
   packages built from it
 - [go-rc-profiler](https://github.com/runtimeconditions/go-rc-profiler): compiled
   into `rc`, profiles the Go app

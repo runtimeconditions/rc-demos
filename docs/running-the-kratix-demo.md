@@ -2,10 +2,10 @@
 
 What this achieves: on a fresh KinD cluster, Kratix fulfills the committed
 request-logger Profile (`artifacts/request-logger-http.profile.yaml`). The Redis
-Promise provisions the cache and the catalog provider supplies the todos API, so the
+Promise provisions the cache and the catalog provider supplies the Todos API, so the
 request logger comes up already wired to both. The smoke test confirms it: `GET /demo`
 answers `"todosApi":"ok"` and `"cache":"ok"`. `06-demo-breaking-change.sh` shows the
-other outcome, the contract failure path when the todos API changes incompatibly.
+other outcome, the contract failure path when the Todos API changes incompatibly.
 
 From the repository root:
 

@@ -1,7 +1,7 @@
 # The request logger apps
 
 What these are: the same workload in Go, Java and Python. Each copy declares the same
-two Conditions (the todos API and a Redis cache) with the published binding packages,
+two Conditions (the Todos API and a Redis cache) with the published binding packages,
 so no sibling `extensions` checkout is needed. Three language copies prove the bindings
 work the same everywhere and give [generating a profile](generating-profiles.md) three
 profiling inputs that must agree:
