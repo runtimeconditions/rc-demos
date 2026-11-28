@@ -1,5 +1,9 @@
 # Generating a profile from an app
 
+What this achieves: a Profile in YAML that states the workload's runtime needs, ready
+to validate with `rc profile validate` and to hand to a platform such as the
+[Kratix demo](running-the-kratix-demo.md).
+
 Install the `rc` CLI (see the [quickstart](../README.md#quickstart)), then the
 profiler for the language:
 
@@ -18,8 +22,12 @@ Go profiling is built into `rc`, so Go workloads need nothing else. Then generat
 (from the repository root):
 
 ```sh
-# Go (built into rc)
-rc profile generate --dir apps/request-logger-http --out request-logger-http.profile.yaml
+# Go (built into rc); the flags below reproduce artifacts/request-logger-http.profile.yaml
+rc profile generate --dir apps/request-logger-http \
+  --name request-logger-http \
+  --workload-uri github.com/runtimeconditions/rc-demos/apps/request-logger-http \
+  --workload-version dev \
+  --out request-logger-http.profile.yaml
 
 # Java
 rc profile java generate --project apps/request-logger-http-java --resolve-build-classpath \
@@ -45,6 +53,6 @@ optional in core 0.4.0). The Kratix resolver and the development binder name
 such Conditions after their kind (`api-1`, `cache-1`) in their messages.
 
 `portable-profile/scripts/generate-profile.sh` runs `rc profile generate` on the
-Go app (put `rc` on `PATH`, or set `RC=/path/to/rc`) and writes
-`artifacts/request-logger-http.profile.yaml`; use `--check` to confirm the
-committed Profile still matches source.
+Go app with exactly those flags (put `rc` on `PATH`, or set `RC` or `RC_CLI` to the
+binary's path) and writes `artifacts/request-logger-http.profile.yaml`; use `--check`
+to confirm the committed Profile still matches source.
