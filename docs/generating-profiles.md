@@ -4,7 +4,7 @@ What this achieves: a Profile in YAML that states the workload's runtime needs, 
 to validate with `rc profile validate` and to hand to a platform such as the
 [Kratix demo](running-the-kratix-demo.md).
 
-Install the `rc` CLI (see the [quickstart](../README.md#quickstart)), then the
+Install `rc` (see the [quickstart](../README.md#quickstart)), then the
 profiler for the language:
 
 ```sh

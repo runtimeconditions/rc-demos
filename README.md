@@ -9,7 +9,7 @@ platforms: a local development binder, Kratix, and a KinD + Cilium + Backstage l
 A Runtime Conditions Profile is a portable, machine-readable list of what one workload
 needs at runtime: the APIs, caches, datastores, and environment configuration it depends
 on. The demos here show the whole loop. The workload declares the need once in its source,
-the [`rc` CLI](https://github.com/runtimeconditions/rc-cli) generates the Profile,
+the [`rc-cli`](https://github.com/runtimeconditions/rc-cli) generates the Profile,
 validation checks it against the spec, and a platform fulfills it.
 
 **Example scenario:** everything in this repo revolves around one workload, the
