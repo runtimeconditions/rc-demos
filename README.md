@@ -1,30 +1,70 @@
-# Runtime Conditions Demos
+# rc-demos
 
-Runtime Conditions is currently seeking adoption by an established parent
-project. The repositories in this organization are split for hands-on usability,
-review, demos, and implementation feedback. They are not intended to present
-Runtime Conditions as a standalone foundation or competing project.
+`rc-demos` is the hands-on playground for Runtime Conditions: runnable workload apps,
+committed Runtime Conditions Profiles generated from them, and downstream adapter demos
+that fulfill those profiles with real platforms — a local development binder, Kratix, and
+a KinD + Cilium + Backstage lab.
 
-Start here: https://runtimeconditions.github.io/
+A Runtime Conditions Profile is a portable, machine-readable list of what one workload
+needs at runtime: the APIs, caches, datastores, and environment configuration it depends
+on. The demos here show the whole loop: declare the need once in the workload's source,
+generate the profile with the [`rc` CLI](https://github.com/runtimeconditions/rc-cli),
+validate it against the spec, and let a platform fulfill it.
 
-This tree contains runnable examples and downstream adapter assets.
+**Example scenario:** the [request logger](apps/request-logger-http) depends on a
+[Todos API](apps/todos-api) reachable at `TODOS_API_URL` and a Redis cache at `REDIS_URL`.
+Today that knowledge lives in a wiki page or someone's head. Here the workload declares
+both needs in its source, `rc profile generate` emits
+[`artifacts/request-logger-http.profile.yaml`](artifacts/request-logger-http.profile.yaml),
+and the demos below fulfill that same Profile in a local dev environment and on Kratix.
+No re-explaining, no drift between docs and reality.
 
-## Layout
+- Guide and concepts: <https://runtimeconditions.io>
+- Profile specification: <https://github.com/runtimeconditions/spec> defines the profile
+  format every demo profile follows
+- Tooling: [`rc-cli`](https://github.com/runtimeconditions/rc-cli) generates and validates
+  the profiles committed under `artifacts/`
 
-- `apps/request-logger-http/` - Go workload that imports first-party declaration packages and demonstrates explicit profile declarations.
-- `apps/request-logger-http-java/` - Java workload with matching explicit declarations for the same Conditions as the Go request logger.
-- `apps/todos-api/` - simple provider API used by the request logger demo.
-- `portable-profile/` - experiment in which one generated request-logger Profile is consumed by both a local development environment and the Kratix deployment path. Start with [`portable-profile/README.md`](portable-profile/README.md).
-- `validated-profile-handoff/` - experiment in verifying trusted upstream validation evidence for exact Profile and extension artifacts before consumer support evaluation. Start with [`validated-profile-handoff/README.md`](validated-profile-handoff/README.md).
-- `artifacts/request-logger-http.profile.yaml` - the generated, committed request-logger Profile shared by both consumers.
-- `dev-container-profile/` - development scaffold and acceptance contract for a build-time Profile composition demo. Implementers should start with [`dev-container-profile/README.md`](dev-container-profile/README.md).
-- `catalog/apis/` - OpenAPI and catalog files used by the adapter demo.
-- `kratix/` - Kratix Promise and adapter assets for downstream fulfillment demos.
-- `kratix/manifests/` - static Kubernetes and Kratix manifests applied by the demo scripts.
-- `cilium-policy/` - a complete KinD, Cilium, Backstage, and microservice lab for
-  building an RCProfile-to-CiliumNetworkPolicy adapter.
+## Quickstart
 
-## The Request Logger apps
+Check the committed demo profile against the core schema embedded in `rc` and the
+definitions of the extensions it declares:
+
+```console
+$ git clone https://github.com/runtimeconditions/rc-demos.git
+$ rc profile validate rc-demos/artifacts/request-logger-http.profile.yaml
+runtimeconditions: profile validated
+```
+
+Install `rc` first if you don't have it — Homebrew, or the apt / dnf repositories that
+setup.sh configures:
+
+```sh
+brew install runtimeconditions/tools/rc-cli
+curl -fsSL https://runtimeconditions.io/packages/setup.sh | sudo sh
+sudo apt install rc-cli          # or: sudo dnf install rc-cli
+```
+
+Then pick a demo to run end to end — see [Run the Kratix demo](#run-the-kratix-demo) or
+the [demo guides](#documentation).
+
+## What's here
+
+| Path | What it is |
+| --- | --- |
+| `apps/request-logger-http/` | Go workload that imports first-party declaration packages and demonstrates explicit profile declarations |
+| `apps/request-logger-http-java/` | Java workload with matching explicit declarations for the same Conditions as the Go request logger |
+| `apps/request-logger-http-python/` | Python workload declaring the same Conditions via the PyPI bindings |
+| `apps/todos-api/` | Simple provider API used by the request logger demo |
+| `artifacts/` | The generated, committed request-logger Profile (`request-logger-http.profile.yaml`) shared by the consumers |
+| `catalog/apis/` | OpenAPI and catalog files for the todos API, used by the adapter demos |
+| `portable-profile/` | One generated request-logger Profile consumed by both a local development environment and the Kratix deployment path |
+| `kratix/` | Kratix Promises, manifests, and scripts that fulfill the Profile on a cluster |
+| `validated-profile-handoff/` | Verifying trusted upstream validation evidence for exact Profile and extension artifacts before consumer support evaluation |
+| `dev-container-profile/` | Development scaffold and acceptance contract for a build-time Profile composition demo |
+| `cilium-policy/` | A complete KinD, Cilium, Backstage, and microservice lab for building an RCProfile-to-CiliumNetworkPolicy adapter |
+
+## The request logger apps
 
 The request logger exists in Go, Java and Python. Each declares the same two
 Conditions (the todos API and a Redis cache) with the published binding
@@ -42,16 +82,11 @@ Build each one on its own:
 (cd apps/request-logger-http-python && pip install .)
 ```
 
-## Generate a Profile from an app
+## Generate a profile from an app
 
-Install the `rc` CLI, then the profiler for the language:
+Install the `rc` CLI (see [Quickstart](#quickstart)), then the profiler for the language:
 
 ```sh
-# rc CLI: Homebrew, or the apt / dnf repositories that setup.sh configures
-brew install runtimeconditions/tools/rc-cli
-curl -fsSL https://runtimeconditions.io/packages/setup.sh | sudo sh
-sudo apt install rc-cli          # or: sudo dnf install rc-cli
-
 # Java profiler (needs JDK 17+)
 brew install runtimeconditions/tools/rc-profiler-java    # or: sudo apt install rc-profiler-java
 
@@ -62,7 +97,7 @@ python3 -m venv .venv && . .venv/bin/activate
 pip install runtimeconditions-profiler
 ```
 
-Then generate:
+Go profiling is built into `rc`, so Go workloads need nothing else. Then generate:
 
 ```sh
 # Go (built into rc)
@@ -96,17 +131,7 @@ Go app (put `rc` on `PATH`, or set `RC=/path/to/rc`) and writes
 `artifacts/request-logger-http.profile.yaml`; use `--check` to confirm the
 committed Profile still matches source.
 
-## Published Demo Images
-
-The image names used by the manifests are intended to live under
-`ghcr.io/runtimeconditions/` once publishing workflows are split out.
-
-- `redis-pipeline`
-- `application-release-pipeline`
-- `todos-api`
-- `request-logger`
-
-## Run the Kratix Demo
+## Run the Kratix demo
 
 From the repository root:
 
@@ -119,10 +144,6 @@ kratix/scripts/04-deploy-application-release.sh
 kratix/scripts/05-smoke-test.sh
 ```
 
-Until the `ghcr.io/runtimeconditions/*` images are published, a KinD cluster
-can use images built from this checkout: run `kratix/scripts/load-local-images.sh`
-and then the scripts above with `IMAGE_PULL_POLICY=IfNotPresent`.
-
 `04-deploy-application-release.sh` embeds the generated
 `artifacts/request-logger-http.profile.yaml` into the `ApplicationRelease`
 request; the manifest does not carry its own Profile.
@@ -132,3 +153,60 @@ To run the contract failure path:
 ```sh
 kratix/scripts/06-demo-breaking-change.sh
 ```
+
+**Demo images.** The image names used by the manifests are intended to live under
+`ghcr.io/runtimeconditions/` once publishing workflows are split out:
+
+- `redis-pipeline`
+- `application-release-pipeline`
+- `todos-api`
+- `request-logger`
+
+Until the `ghcr.io/runtimeconditions/*` images are published, a KinD cluster
+can use images built from this checkout: run `kratix/scripts/load-local-images.sh`
+and then the scripts above with `IMAGE_PULL_POLICY=IfNotPresent`.
+
+## Documentation
+
+Each demo has its own guide:
+
+- [Portable Profile](portable-profile/README.md) — one demand, two fulfillments
+  (local dev binder and Kratix)
+- [Validated Profile handoff](validated-profile-handoff/README.md) — trusted upstream
+  validation evidence for a received Profile; see also
+  [PUBLISHED-MIGRATION.md](validated-profile-handoff/PUBLISHED-MIGRATION.md) for pinned
+  dependencies and reproduction commands
+- [Dev-container Profile](dev-container-profile/README.md) — build-time Profile
+  composition; start from [PROJECT-BRIEF.md](dev-container-profile/PROJECT-BRIEF.md),
+  design notes in [COMPOSITION-NOTES.md](dev-container-profile/COMPOSITION-NOTES.md)
+- [Cilium policy lab](cilium-policy/README.md) — RCProfile-to-CiliumNetworkPolicy
+  adapter; contract in [docs/adapter-contract.md](cilium-policy/docs/adapter-contract.md),
+  setup in [docs/manual-install.md](cilium-policy/docs/manual-install.md)
+
+## Ecosystem
+
+Independently versioned repos around the demos. How each connects to this repo:
+
+- [rc-cli](https://github.com/runtimeconditions/rc-cli) — the `rc` binary that
+  generates (`rc profile generate`) and validates (`rc profile validate`) the
+  profiles in `artifacts/`; the [quickstart](#quickstart) validates one of them
+- [spec](https://github.com/runtimeconditions/spec) — defines the Profile format;
+  `rc` pins the core schema at build time and the committed profiles follow it
+- [extensions](https://github.com/runtimeconditions/extensions) — the extension
+  vocabulary and schemas the profiles declare; the apps import the published binding
+  packages built from it
+- [go-rc-profiler](https://github.com/runtimeconditions/go-rc-profiler) — compiled
+  into `rc`, profiles the Go app
+- [java-rc-profiler](https://github.com/runtimeconditions/java-rc-profiler) and
+  [python-rc-profiler](https://github.com/runtimeconditions/python-rc-profiler) —
+  add-ons that profile the Java and Python request loggers
+- [backstage-plugin](https://github.com/runtimeconditions/backstage-plugin) — consumes
+  profiles in Backstage; exercised by the [cilium-policy](cilium-policy/README.md) lab
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md).
+
+## License
+
+[MIT](LICENSE) — Copyright (c) 2026 Runtime Conditions.
