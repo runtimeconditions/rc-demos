@@ -35,9 +35,9 @@ $ rc profile validate rc-demos/artifacts/request-logger-http.profile.yaml
 runtimeconditions: profile validated
 ```
 
-Install `rc` first if you don't have it. The package is named `rc-cli`; the executable
-is named `rc`. Either use Homebrew, or configure the apt / dnf repositories that
-setup.sh provides:
+Install `rc-cli` first if you don't have it; it provides the `rc` executable you run
+below. Either use Homebrew, or configure the apt / dnf repositories that setup.sh
+provides:
 
 ```sh
 brew install runtimeconditions/tools/rc-cli
