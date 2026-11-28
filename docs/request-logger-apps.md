@@ -1,8 +1,10 @@
 # The request logger apps
 
-The request logger exists in Go, Java and Python. Each declares the same two
-Conditions (the todos API and a Redis cache) with the published binding
-packages, so no sibling `extensions` checkout is needed:
+What these are: the same workload in Go, Java and Python. Each copy declares the same
+two Conditions (the todos API and a Redis cache) with the published binding packages,
+so no sibling `extensions` checkout is needed. Three language copies prove the bindings
+work the same everywhere and give [generating a profile](generating-profiles.md) three
+profiling inputs that must agree:
 
 - Go: `runtimeconditions.io/x/rc/common` and `/env` (see `apps/request-logger-http/go.mod`)
 - Java: `io.runtimeconditions.bindings` on Maven Central (see the pom)
